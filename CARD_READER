@@ -1,0 +1,147 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <FS.h>
+#include "SPIFFS.h"
+#include <WiFi.h>
+#include <NTPClient.h> /* https://github.com/arduino-libraries/NTPClient */
+
+#define PINO_SS 10
+#define PINO_RST 9
+#define buzzer 15
+
+const char* ssid = "iPhone";
+const char* password =  "244466666";
+String str;
+String s;
+String Data;
+String Hora;
+
+WiFiUDP udp;
+NTPClient ntp(udp, "a.st1.ntp.br", -3 * 3600, 60000);/* Cria um objeto "NTP" com as configurações.utilizada no Brasil */
+
+MFRC522 mfrc522(PINO_SS, PINO_RST);
+
+void formatFile() {
+  Serial.println("Formantando SPIFFS");
+  SPIFFS.format();
+  Serial.println("Formatou SPIFFS");
+}
+
+void openFS(void) {
+  if (!SPIFFS.begin()) {
+    Serial.println("\nErro ao abrir o sistema de arquivos");
+  }
+  else {
+    Serial.println("\nSistema de arquivos aberto com sucesso!");
+  }
+}
+
+void writeFile(String state, String path) { //escreve conteúdo em um arquivo
+  File rFile = SPIFFS.open(path, "a");//a para anexar
+  if (!rFile) {
+    Serial.println("Erro ao abrir arquivo!");
+  }
+  else {
+    Serial.print("tamanho");
+    Serial.println(rFile.size());
+    rFile.println(state);
+    Serial.print("Gravou: ");
+    Serial.println(state);
+  }
+  rFile.close();
+}
+
+String readFile(String path) {
+  Serial.println("Read file");
+  File rFile = SPIFFS.open(path, "r");//r+ leitura e escrita
+  if (!rFile) {
+    Serial.println("Erro ao abrir arquivo!");
+  }
+  else {
+    Serial.print("----------Lendo arquivo ");
+    Serial.print(path);
+    Serial.println("  ---------");
+    while (rFile.position() < rFile.size())
+    {
+      s = rFile.readStringUntil('/');
+      s.trim();
+      Serial.println(s);
+    }
+    rFile.close();
+    return s;
+  }
+}
+
+void cadastrar_cartao(){
+
+}
+
+void verificar_memoria(){
+
+}
+
+void armazenar_memoria(){
+
+}
+
+void excluir_cartao(){
+
+}
+
+void comparar(){
+
+}
+
+void setup() {
+  Serial.begin(115200);
+  SPI.begin();
+  mfrc522.PCD_Init();
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);                                
+    Serial.println("Conectando ao WiFi..");     
+  }
+  Serial.println("Conectado");
+  delay(200);
+  ntp.begin();           
+  ntp.forceUpdate(); 
+  formatFile();    //Caso essa seja a primeira vez utilizando o ESP, descomente essa linha;
+  Serial.println("abrir arquivo");
+  openFS();
+
+  pinMode(buzzer, OUTPUT);
+
+  digitalWrite(buzzer, LOW);
+
+  String test = readFile("/registro.txt");
+}
+
+void loop() {
+  if (!mfrc522.PICC_IsNewCardPresent()) return;  // Aguarda a aproximação do token
+  if (!mfrc522.PICC_ReadCardSerial()) return;    // Seleciona qual token vai ser utilizado
+  Serial.print("UID da tag:");                   // Mostra UID do token na serial
+  String conteudo = "";                          //Cria uma variável vazia, do tipo string
+  byte letra;
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
+    if (mfrc522.uid.uidByte[i] < 0x10) {
+      Serial.print(" 0");
+    } else {
+      Serial.print(" ");
+    }
+    Serial.print(mfrc522.uid.uidByte[i], HEX);  // Printa a mensagem convertida em hexadecimal
+    if (mfrc522.uid.uidByte[i] < 0x10) {
+      conteudo.concat(String(" 0"));
+    } else {
+      conteudo.concat(String(" "));
+    }
+    conteudo.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  Serial.println();
+  conteudo.toUpperCase();  //Coloca todas as letras da string em maiúscula
+  if (conteudo.substring(1) == "63 87 FC 94") {
+
+  }
+  Data = ntp.getFormattedTime();
+}
