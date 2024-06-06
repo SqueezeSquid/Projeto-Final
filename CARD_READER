@@ -8,13 +8,19 @@
 #define PINO_SS 10
 #define PINO_RST 9
 #define buzzer 15
+#define trava 18
+#define led_verde 21
 
 const char* ssid = "iPhone";
 const char* password =  "244466666";
 String str;
-String s;
+String s, s_old;
 String Data;
 String Hora;
+String cartao;
+
+unsigned long tempo = millis();
+unsigned long tempo_trava;
 
 WiFiUDP udp;
 NTPClient ntp(udp, "a.st1.ntp.br", -3 * 3600, 60000);/* Cria um objeto "NTP" com as configurações.utilizada no Brasil */
@@ -76,8 +82,25 @@ void cadastrar_cartao(){
 
 }
 
-void verificar_memoria(){
+String verificar_memoria(String path, String valor){
+  File rFile = SPIFFS.open(path, "r");//r+ leitura e escrita
+  if (!rFile) {
+    Serial.println("Erro ao abrir arquivo!");
+  }
+  else {
+    while (rFile.position() < rFile.size())
+    {
+      s = rFile.readStringUntil('/');
+      s.trim();
+      if (valor == s){
+        return s_old;
+      }
+      s_old = s;
+    }
+    rFile.close();
+  }
 
+  return "falha";
 }
 
 void armazenar_memoria(){
@@ -88,8 +111,14 @@ void excluir_cartao(){
 
 }
 
-void comparar(){
-
+void controle_trava(){
+  tempo_trava = tempo;
+  while(tempo - tempo_trava < 10000){
+    digitalWrite(trava, LOW);
+    digitalWrite(led_verde, HIGH);
+  }
+  digitalWrite(trava, HIGH);
+  digitalWrite(led_verde, LOW);
 }
 
 void setup() {
@@ -112,10 +141,14 @@ void setup() {
   openFS();
 
   pinMode(buzzer, OUTPUT);
+  pinMode(trava, OUTPUT);
+  pinMode(led_verde, OUTPUT);
 
   digitalWrite(buzzer, LOW);
+  digitalWrite(trava, HIGH);
+  digitalWrite(led_verde, LOW);
 
-  String test = readFile("/registro.txt");
+  String arqui = readFile("/registro.txt");
 }
 
 void loop() {
@@ -140,8 +173,13 @@ void loop() {
   }
   Serial.println();
   conteudo.toUpperCase();  //Coloca todas as letras da string em maiúscula
-  if (conteudo.substring(1) == "63 87 FC 94") {
-
+  cartao = verificar_memoria("/registro.txt", conteudo.substring(1));
+  if (cartao == "falha"){
+    return;
+  }else{
+    
   }
+  
+
   Data = ntp.getFormattedTime();
 }
