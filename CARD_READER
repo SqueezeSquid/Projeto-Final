@@ -5,14 +5,13 @@
 #include <WiFi.h>
 #include <NTPClient.h> /* https://github.com/arduino-libraries/NTPClient */
 
-#define PINO_SS 10
-#define PINO_RST 9
-#define buzzer 15
-#define trava 18
-#define led_verde 21
+#define PINO_SS 21
+#define PINO_RST 2
+#define trava 22
+#define led_verde 4
 
-const char* ssid = "iPhone";
-const char* password =  "244466666";
+const char* ssid = "NPITI-IoT";
+const char* password =  "NPITI-IoT";
 String str;
 String s, s_old;
 String Data;
@@ -111,7 +110,7 @@ void excluir_cartao(){
 
 }
 
-void controle_trava(){
+void abrir_trava(){
   tempo_trava = tempo;
   while(tempo - tempo_trava < 10000){
     digitalWrite(trava, LOW);
@@ -140,23 +139,24 @@ void setup() {
   Serial.println("abrir arquivo");
   openFS();
 
-  pinMode(buzzer, OUTPUT);
   pinMode(trava, OUTPUT);
   pinMode(led_verde, OUTPUT);
 
-  digitalWrite(buzzer, LOW);
   digitalWrite(trava, HIGH);
   digitalWrite(led_verde, LOW);
 
+  writeFile("Diego Maia Marques/53 A2 3C 91/Ryan Noriyuki Ferreira Mendori/83 9C BD 0B/", "/registro.txt");
   String arqui = readFile("/registro.txt");
 }
 
 void loop() {
+  Serial.println("1");
   if (!mfrc522.PICC_IsNewCardPresent()) return;  // Aguarda a aproximação do token
   if (!mfrc522.PICC_ReadCardSerial()) return;    // Seleciona qual token vai ser utilizado
   Serial.print("UID da tag:");                   // Mostra UID do token na serial
   String conteudo = "";                          //Cria uma variável vazia, do tipo string
   byte letra;
+  Serial.println("2");
   for (byte i = 0; i < mfrc522.uid.size; i++) {
     if (mfrc522.uid.uidByte[i] < 0x10) {
       Serial.print(" 0");
@@ -175,11 +175,13 @@ void loop() {
   conteudo.toUpperCase();  //Coloca todas as letras da string em maiúscula
   cartao = verificar_memoria("/registro.txt", conteudo.substring(1));
   if (cartao == "falha"){
+    Serial.println("4");
     return;
   }else{
-    
+    Serial.println("5");
+    abrir_trava();
   }
-  
-
+  Serial.println("6");
   Data = ntp.getFormattedTime();
+}
 }
