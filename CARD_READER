@@ -184,4 +184,3 @@ void loop() {
   Serial.println("6");
   Data = ntp.getFormattedTime();
 }
-}
